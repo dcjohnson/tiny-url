@@ -1,0 +1,19 @@
+{
+  "name": "tiny-url",
+  "version": "1.0.0",
+  "description": "A small url routing library",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dcjohnson/tiny-url.git"
+  },
+  "author": "Dylan Conrad Johnson",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/dcjohnson/tiny-url/issues"
+  },
+  "homepage": "https://github.com/dcjohnson/tiny-url#readme"
+}
