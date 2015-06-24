@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/dcjohnson/tiny-url/issues"
   },
-  "homepage": "https://github.com/dcjohnson/tiny-url#readme"
+  "homepage": "https://github.com/dcjohnson/tiny-url#readme",
+  "dependencies": {
+    "tiny-url-regex": "^1.0.0"
+  }
 }

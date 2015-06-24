@@ -1,17 +1,11 @@
+var ndfa = require('tiny-url-regex');
+
 UrlTreeNode = function(children, urlPoint, isRegex, handler) {
 	this.children = [children];
 	this.urlPoint = urlPoint;
 	this.isRegex = isRegex;
 	this.handler = handler;
 };
-
-// UrlTreeNode.prototype.compareUrlPoints = function(urlPoint) {
-// 	if(this.isRegex === true) {
-//
-// 	} else {
-// 		return this.urlPoint === urlPoint;
-// 	}
-// }
 
 UrlTree = function(head, httpVerb) {
 	this.head = head;
@@ -29,3 +23,9 @@ exports.Route = function() {
 exports.Route.prototype.newRout = function(route, handler) {
 
 };
+
+
+var state = new ndfa.Ndfa('abc');
+state.generateStates();
+console.log(state.testString('abc'));
+console.log(state.testString('abcc'));
