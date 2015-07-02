@@ -1,14 +1,14 @@
 var ndfa = require('tiny-url-regex');
 
 UrlTreeNode = function(children, urlPoint, handler) {
-	this.children = children;
-	this.urlPoint = urlPoint;
-	this.handler = handler;
+    this.children = children;
+    this.urlPoint = urlPoint;
+    this.handler = handler;
 }
 
 UrlTree = function(head, httpVerb) {
-	this.head = head;
-	this.httpVerb = httpVerb;
+    this.head = head;
+    this.httpVerb = httpVerb;
 }
 
 UrlTree.prototype.addEndPoint = function(points, handler) {
@@ -16,7 +16,7 @@ UrlTree.prototype.addEndPoint = function(points, handler) {
 }
 
 exports.Route = function() {
-	this.endPoints = new UrlTree();
+    this.endPoints = new UrlTree();
 }
 
 exports.Route.prototype.newRout = function(route, handler) {
