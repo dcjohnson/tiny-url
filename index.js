@@ -4,7 +4,27 @@ Router = function() {
     this.getEndpoints = [];
     this.postEndpoints = [];
     this.addEndpoint = function(endpoints, path, handler) {
-
+        var pathSegments = path.split('/');
+        var paths = endpoints.filter(function(elem, index, array) {
+            return elem.testUrl(pathSegments[0]);
+        });
+        var path = paths[0];
+        var pathExists = paths.length === 1;
+        for (var index = 1; index < pathSegments.length; index++) {
+            if (path.hasMatchingChildEndpoint(pathSegments[index])) {
+                path = path.getMatchingChildEndpoint(pathSegments[index]);
+            } else {
+                var ndfa = new regex.Ndfa(pathSegments[index]);
+                ndfa.generateStates();
+                if (index + 1 === pathSegments.length) {
+                    var newEndpoint = new Endpoint(ndfa, this, handler);
+                } else {
+                    var newEndpoint = new Endpoint(ndfa, this);
+                }
+                path.addEndpoint(newEndpoint);
+                path = newEndpoint;
+            }
+        }
     }
 }
 
@@ -28,10 +48,10 @@ Router.prototype.apply = function(req, res) {
 
 }
 
-Endpoint = function(endpointHandler, regex, parentRouter) {
+Endpoint = function(regex, parentRouter, endpointHandler) {
     this.router = parentRouter;
     this.handler = endpointHandler;
-    this.childEndpoints = []
+    this.childEndpoints = [];
     this.regex = regex;
     this.regex.generateStates();
 }
@@ -46,6 +66,20 @@ Endpoint.prototype.testUrl = function(path) {
 
 Endpoint.prototype.addChildEndpoint = function(endPoint) {
     this.childEndpoints.push(endPoint);
+}
+
+Endpoint.prototype.getMatchingChildEndpoint = function(urlSegment) {
+    var match = childEndpoints.filter(function(elem, index, array) {
+        return elem.testUrl(urlSegment);
+    });
+    return match[0];
+}
+
+Endpoint.prototype.hasMatchingChildEndpoint = function(urlSegment) {
+    var matches = childEndpoints.filter(function(elem, index, array) {
+        return elem.testUrl(urlSegment);
+    })
+    return matches.length === 1;
 }
 
 
