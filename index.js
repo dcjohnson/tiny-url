@@ -41,7 +41,7 @@ UrlCheck = function(regexRule, checkFunc, depth) {
     this.testUrlSeg = function(req, res) {
         var urlSeg = req.url.split('/');
         var stringMatch = this.ndfa.testString(urlSeg);
-        if (typeof this.checkFunc !== 'undefined') {
+        if (checkFunc) {
             return stringMatch && checkFunc(req, res);
         }
         return stringMatch;
@@ -59,7 +59,7 @@ Endpoint = function(urlChecker, endpointHandler) {
 
     this.applyUrl = function(req, res) {
         if (this.testUrl(req, res)) {
-            if (typeof handler !== 'undefined') {
+            if (handler) {
                 handler(req, res);
             } else {
                 var nextEndpoint = this.getNextEndpoint(req, res);
