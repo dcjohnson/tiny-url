@@ -1,9 +1,5 @@
 var regex = require('tiny-url-regex');
 
-/// Update! This code is under heavy work!
-/// I have decided to take the easy route.
-/// There will be a major change in how this will be designed.
-
 Router = function() {
     var urls = [];
     var subControllers = [];
@@ -33,14 +29,28 @@ Router = function() {
     }
 
     this.addEndpoint = function(verb, path, handler) {
-        // I will need test the subControllers.
-
-
+        var segments = path.split('/');
         var verbObj = this.getVerbObject(verb);
         if (verbObj) {
-            verbObj.endPoint.map(function(elem) {
-                elem.addChildEndpoint(handler, path.split('/'));
+            var hasUndefined = false;
+            var endPoints = segments.map(function(elem, index, array) {
+                if (elem === '' && index >= 0) {
+                    hasUndefined = true;
+                    return 'undefined';
+                }
+                var newHandler = index === array.length - 1 ? handler : 'undefined';
+                return new Endpoint({
+                    regexRule: elem,
+                    depth: index,
+                    handler: newHandler
+                });
             });
+            if (!hasUndefined) {
+                for (var index = 1; index < endPoints.length; index++) {
+                    endPoints[index - 1].setChildEndpoint(endPoints[index]);
+                }
+                verbObj.endPoints.push(endPoints[0]);
+            }
         }
     }
 
@@ -71,14 +81,12 @@ Router = function() {
     }
 
     this.apply = function(req, res) {
-        for(var index = 0; index < this.middleWare.length; index++) {
-            this.middleWare[index](req, res);
-        }
+
     }
 }
 
 Endpoint = function(initObj) {
-    var childEndpoints = [];
+    var childEndpoint = 'undefined';
     var depth = initObj.depth;
 
     var handler = initObj.endpointHandler;
@@ -99,58 +107,27 @@ Endpoint = function(initObj) {
             if (handler) {
                 handler(req, res);
             } else {
-                var nextEndpoint = this.getNextEndpoint(req, res);
-                if (nextEndpoint) {
-                    nextEndpoint.applyUrl(req, res);
+                if (this.childEndpoint) {
+                    this.childEndpoint.applyUrl(req, res);
                 }
             }
-        } else {
-            pageNotFound(res);
         }
+        // Need to handle 404s
     }
 
     this.testUrl = function(req, res) {
         var isValid = true;
         if (this.testRequestSeg(req, res)) {
-            var nextEndpoint = this.getNextEndpoint(req, res);
-            if (nextEndpoint) {
-                isValid = isValid && nextEndpoint.testUrl(req, res);
+            if (this.childEndpoint) {
+                isValid = isValid && this.childEndpoint.testUrl(req, res);
             }
             return isValid;
         }
         return false;
     }
 
-    this.addChildEndpoint = function(newHandler, segments) {
-        // This could likely be optomized because I am checking the
-        // validity of the url too many times.
-        if (ndfa.testString(segments[depth])) {
-            var nextEndpoint = this.childEndpoints.filter(function(elem) {
-                return elem.testUrlSeg(path);
-            })[0];
-            if (nextEndpoint) {
-                nextEndpoint.addChildEndpoint(endPoint, segments);
-            } else if (segments.length > depth) {
-                var endPoint = new Endpoint({
-                    regexRule: segments[depth + 1],
-                    depth: depth + 1
-                });
-                childEndpoints.push(endPoint)
-            } else {
-                var endPoint = new Endpoint({
-                    regexRule: segments[depth + 1],
-                    depth: depth + 1,
-                    endpointHandler: newHandler
-                });
-                childEndpoints.push(endPoint);
-            }
-        }
-    }
-
-    this.getNextEndpoint = function(req, res) {
-        return childEndpoints.filter(function(elem) {
-            return elem.testRequestSeg(req, res);
-        })[0];
+    this.setChildEndpoint = function(newEndpoint) {
+        this.childEndpoint = newEndpoint;
     }
 }
 
