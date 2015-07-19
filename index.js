@@ -17,13 +17,15 @@ Router = function() {
         if (!router) {
             throw "Router not defined.";
         }
-        if (!path) {
-            throw "Path not defined.";
-        }
         if (!master) {
             throw "Master not defined.";
         }
-        this.path = path;
+        var segs = path.split('/');
+        this.paths = segs.map(function(elem) {
+            var ndfa = new regex.Ndfa(elem);
+            ndfa.generateStates();
+            return ndfa;
+        });
         this.router = router;
         this.master = master;
     }
@@ -32,24 +34,18 @@ Router = function() {
         var segments = path.split('/');
         var verbObj = this.getVerbObject(verb);
         if (verbObj) {
-            var hasUndefined = false;
             var endPoints = segments.map(function(elem, index, array) {
-                if (elem === '' && index >= 0) {
-                    hasUndefined = true;
-                    return 'undefined';
-                }
-                var newHandler = index === array.length - 1 ? handler : 'undefined';
+                var newHandler = index === array.length - 1 ? handler : undefined;
                 return new Endpoint({
                     regexRule: elem,
                     depth: index,
                     handler: newHandler
                 });
             });
-            if (!hasUndefined) {
-                for (var index = 1; index < endPoints.length; index++) {
+            for (var index = 1; index < endPoints.length; index++) {
+                if (endPoints[index - 1]) {
                     endPoints[index - 1].setChildEndpoint(endPoints[index]);
                 }
-                verbObj.endPoints.push(endPoints[0]);
             }
         }
     }
@@ -72,8 +68,8 @@ Router = function() {
 
     }
 
-    this.addSubController = function(subController) {
-
+    this.addSubController = function(router, path) {
+        this.subControllers.push(new SubController(router, path, this));
     }
 
     this.use = function(middleWare) {
@@ -112,7 +108,6 @@ Endpoint = function(initObj) {
                 }
             }
         }
-        // Need to handle 404s
     }
 
     this.testUrl = function(req, res) {
