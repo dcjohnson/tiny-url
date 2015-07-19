@@ -5,7 +5,7 @@ Router = function() {
     var subControllers = [];
     var middleWare = [];
 
-    Verbs = function(verb) {
+    Verb = function(verb) {
         this.verb = verb;
         this.endPoints = [];
     }
@@ -21,36 +21,44 @@ Router = function() {
         this.master = master;
     }
 
+    this.page404 = function(req, res) {
+        res.write('Ooops!');
+        res.end();
+    }
+
     this.addEndpoint = function(verb, path, handler) {
         var segments = path.split('/');
         var verbObj = this.getVerbObject(verb);
-        if (verbObj) {
-            var endPoints = segments.map(function(elem, index, array) {
-                var newHandler = index === array.length - 1 ? handler : undefined;
-                return new Endpoint({
-                    regexRule: elem,
-                    depth: index,
-                    handler: newHandler
-                });
+        var endPoints = segments.map(function(elem, index, array) {
+            var newHandler = index === array.length - 1 ? handler : undefined;
+            return new Endpoint({
+                regexRule: elem,
+                depth: index,
+                endpointHandler: newHandler,
             });
-            for (var index = 1; index < endPoints.length; index++) {
-                if (endPoints[index - 1]) {
-                    endPoints[index - 1].setChildEndpoint(endPoints[index]);
-                }
-            }
+        });
+        for (var index = 1; index < endPoints.length; index++) {
+            endPoints[index - 1].setChildEndpoint(endPoints[index]);
+        }
+        if (verbObj) {
+            verbObj.endPoints.push(endPoints[0]);
+        } else {
+            var newVerb = new Verb(verb);
+            newVerb.endPoints.push(endPoints[0]);
+            urls.push(newVerb)
         }
     }
 
     this.get = function(path, handler) {
-        this.addEndpoint('get', path, handler);
+        this.addEndpoint('GET', path, handler);
     }
 
     this.post = function(path, handler) {
-        this.addEndpoint('post', path, handler);
+        this.addEndpoint('POST', path, handler);
     }
 
     this.getVerbObject = function(verb) {
-        return this.urls.filter(function(elem) {
+        return urls.filter(function(elem) {
             return verb === elem.verb;
         })[0];
     }
@@ -68,35 +76,53 @@ Router = function() {
     }
 
     this.apply = function(req, res) {
-
+        var passControl = true;
+        for (var index = 0; index < middleWare.length; index++) {
+            passControl = passControl && middleWare[index](req, res);
+            if (!passControl) {
+                break;
+            }
+        }
+        if (passControl) {
+            var endPoints = this.getVerbObject(req.method).endPoints;
+            var useEndpoints = false;
+            for (var index = 0; index < endPoints.length; index++) {
+                useEndpoints = useEndpoints || endPoints[index].testUrl(req, res);
+            }
+            if (useEndpoints) {
+                for (var index = 0; index < endPoints.length; index++) {
+                    endPoints[index].applyUrl(req, res);
+                }
+            } else {
+                this.page404(req, res);
+            }
+            // Now, handle the subcontrollers.
+        }
     }
 }
 
 Endpoint = function(initObj) {
-    var childEndpoint = 'undefined';
+    var childEndpoint = initObj.childEndpoint;
     var depth = initObj.depth;
-
     var handler = initObj.endpointHandler;
     var ndfa = new regex.Ndfa(initObj.regexRule);
     ndfa.generateStates();
 
     this.testRequestSeg = function(req, res) {
-        var urlSeg = req.url.split('/');
-        var stringMatch = ndfa.testString(urlSeg[depth]);
-        if (checkFunc) {
-            return stringMatch && checkFunc(req, res);
-        }
-        return stringMatch;
+        return ndfa.testString(req.url.split('/')[depth]);
+    }
+
+    this.consumedEntireUrl = function(req) {
+        return req.url.split('/').length - 1 === depth;
     }
 
     this.applyUrl = function(req, res) {
-        if (this.testUrlSeg(req, res)) {
-            if (handler) {
+        if (this.testRequestSeg(req, res)) {
+            var consumedUrl = this.consumedEntireUrl(req);
+            if (childEndpoint && !consumedUrl) {
+                childEndpoint.applyUrl(req, res);
+            } else if (handler && consumedUrl) {
                 handler(req, res);
-            } else {
-                if (this.childEndpoint) {
-                    this.childEndpoint.applyUrl(req, res);
-                }
             }
         }
     }
@@ -104,8 +130,8 @@ Endpoint = function(initObj) {
     this.testUrl = function(req, res) {
         var isValid = true;
         if (this.testRequestSeg(req, res)) {
-            if (this.childEndpoint) {
-                isValid = isValid && this.childEndpoint.testUrl(req, res);
+            if (childEndpoint) {
+                isValid = isValid && childEndpoint.testUrl(req, res);
             }
             return isValid;
         }
@@ -113,7 +139,7 @@ Endpoint = function(initObj) {
     }
 
     this.setChildEndpoint = function(newEndpoint) {
-        this.childEndpoint = newEndpoint;
+        childEndpoint = newEndpoint;
     }
 }
 
