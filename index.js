@@ -6,20 +6,11 @@ Router = function() {
     var middleWare = [];
 
     Verbs = function(verb) {
-        if (!verb) {
-            throw "No verb defined.";
-        }
         this.verb = verb;
         this.endPoints = [];
     }
 
     SubController = function(router, path, master) {
-        if (!router) {
-            throw "Router not defined.";
-        }
-        if (!master) {
-            throw "Master not defined.";
-        }
         var segs = path.split('/');
         this.paths = segs.map(function(elem) {
             var ndfa = new regex.Ndfa(elem);
