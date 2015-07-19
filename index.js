@@ -10,17 +10,6 @@ Router = function() {
         this.endPoints = [];
     }
 
-    SubController = function(router, path, master) {
-        var segs = path.split('/');
-        this.paths = segs.map(function(elem) {
-            var ndfa = new regex.Ndfa(elem);
-            ndfa.generateStates();
-            return ndfa;
-        });
-        this.router = router;
-        this.master = master;
-    }
-
     this.page404 = function(req, res) {
         res.write('Ooops!');
         res.end();
@@ -63,16 +52,8 @@ Router = function() {
         })[0];
     }
 
-    this.checkSubControllerPaths = function(path) {
-
-    }
-
-    this.addSubController = function(router, path) {
-        this.subControllers.push(new SubController(router, path, this));
-    }
-
-    this.use = function(middleWare) {
-        this.middleWare.push(middleWare);
+    this.use = function(newMiddleWare) {
+        middleWare.push(newMiddleWare);
     }
 
     this.apply = function(req, res) {
@@ -96,7 +77,6 @@ Router = function() {
             } else {
                 this.page404(req, res);
             }
-            // Now, handle the subcontrollers.
         }
     }
 }
@@ -130,12 +110,16 @@ Endpoint = function(initObj) {
     this.testUrl = function(req, res) {
         var isValid = true;
         if (this.testRequestSeg(req, res)) {
-            if (childEndpoint) {
-                isValid = isValid && childEndpoint.testUrl(req, res);
+            var consumedUrl = this.consumedEntireUrl(req);
+            if (childEndpoint && !consumedUrl) {
+                isValid = childEndpoint.testUrl(req, res);
+            } else if (!childEndpoint && !consumedUrl) {
+                isValid = false;
             }
-            return isValid;
+        } else {
+            isValid = false;
         }
-        return false;
+        return isValid;
     }
 
     this.setChildEndpoint = function(newEndpoint) {
