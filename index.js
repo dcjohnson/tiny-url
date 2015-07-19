@@ -113,7 +113,9 @@ Endpoint = function(initObj) {
             var consumedUrl = this.consumedEntireUrl(req);
             if (childEndpoint && !consumedUrl) {
                 isValid = childEndpoint.testUrl(req, res);
-            } else if (!childEndpoint && !consumedUrl) {
+            } else if (!childEndpoint && consumedUrl) {
+                isValid = true;
+            } else {
                 isValid = false;
             }
         } else {
