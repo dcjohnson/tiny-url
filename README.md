@@ -19,8 +19,8 @@ route.get('/(e|3)', function(req, res) {
 })
 
 route.get('/', function(req, res) {
-    var stream = fs.createReadStream(__dirname + '/html/index.html');
-    stream.pipe(res);
+    res.write('root');
+    res.end();
 });
 
 route.page404 = function(req, res) {
