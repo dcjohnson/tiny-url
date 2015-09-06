@@ -1,6 +1,8 @@
 # tiny-url
 A small node.js url routing package.
 
+#example
+
 ```js
 var http = require('http');
 var fs = require('fs');
